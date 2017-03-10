@@ -1,0 +1,23 @@
+{
+  "name": "readability",
+  "version": "0.0.1",
+  "description": "A Readability Lambda",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "readability-node": "0.1.0",
+    "jsdom": "8.2.0",
+    "bluebird": "^2.9.*",
+    "request": "2.79.0",
+    "bunyan": "1.8.8",
+    "aws-sdk": "2.22.0",
+    "uuid": "3.0.1"
+  },
+  "engines": {
+    "node": "5.9.0"
+  },
+  "license": "MIT"
+}
+

@@ -1,5 +1,5 @@
 {
-  "name": "Readability lambda",
+  "name": "readability2",
   "runtime": "nodejs4.3",
   "description": "Extract article content",
   "region": "eu-west-1",

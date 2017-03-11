@@ -31,7 +31,7 @@ var USER_AGENTS = [
 
 exports.myHandler = function(event, context, callback) {
     var waitForMe = []
-
+    LOG.info(event)
     p = new Promise(function(resolve) {
         if (event['s3Items'] != null) {
             LOG.info('Gonna download items from s3: ' + event['s3Items']['key'])

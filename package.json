@@ -10,7 +10,7 @@
     "readability-node": "0.1.0",
     "jsdom": "8.2.0",
     "bluebird": "^2.9.*",
-    "request": "2.79.0",
+    "request-promise": "4.1.1",
     "bunyan": "1.8.8",
     "aws-sdk": "2.22.0",
     "uuid": "3.0.1"

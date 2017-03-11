@@ -1,6 +1,10 @@
 jsdom = require('jsdom').jsdom;
 var Promise = require("bluebird");
-request = require('request').defaults({maxRedirects:5})
+//var request = require('request').defaults({maxRedirects:5})
+
+var rp = require('request-promise').defaults({maxRedirects:5});
+
+
 https = require('https');
 r = require('readability-node');
 var bunyan = require('bunyan');
@@ -65,19 +69,20 @@ exports.myHandler = function(event, context, callback) {
                 continue
             }
 
+            var urls = []
             var articlesLength = item['articles'].length
             for (var j = 0; j < articlesLength; j++){
                 article = item['articles'][j]
                 p = new Promise(function(resolve) {
-                    var url = article['url']
+                    url = article['url']
                     var options = {
                       url: url,
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       }
                     };
-                    request(options, function(error, response, body){
-                        if (!error && response.statusCode == 200) {
+                    rp(options)
+                        .then(function (body) {
                             try {
                                 LOG.info({event: 'fetched', url: url});
                                 var doc = jsdom(body, {features: {
@@ -101,17 +106,14 @@ exports.myHandler = function(event, context, callback) {
                                 // TODO remove it
                                 ret[url] = "Error extracting " + err;
                             }
-                        } else if (error) {
+                            resolve()
+                        })
+                        .catch(function (error) {
                             LOG.error({event: 'fetch_error', url: url, error: error});
                             // TODO remove
                             ret[url] = "Error fetching " + error;
-                        } else {
-                            LOG.error({event: 'fetch_error', url: url, response: response});
-                            // TODO remove
-                            ret[url] = "Not 200 response " + response;
-                        }
-                        resolve()
-                    })
+                            resolve()
+                        });
                 });
                 waitForMe.push(p)
             }

@@ -34,16 +34,20 @@ exports.myHandler = function(event, context, callback) {
 
     p = new Promise(function(resolve) {
         if (event['s3Items'] != null) {
+            LOG.info('Gonna download items from s3: ' + event['s3Items']['key'])
             S3.getObjectAsync({
                 'Bucket': event['s3Items']['bucket'],
                 'Key': event['s3Items']['key']
             }).then(function(data) {
+                LOG.info('Downloaded items from s3')
                 event['items'] = JSON.parse(data.Body.toString('utf-8'))
                 resolve()
             }).catch(function(error) {
+                LOG.error('Error downloading items from s3')
                 callback(error)
             });
         } else {
+            LOG.info('No need to download items')
             resolve()
         }
     })

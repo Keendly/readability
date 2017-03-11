@@ -52,6 +52,13 @@ exports.myHandler = function(event, context, callback) {
         var itemsLength = event['items'].length;
         for (var i = 0; i < itemsLength; i++){
             item = event['items'][i]
+            if (item['articles'] == null || item['articles'].length == 0){
+                continue
+            }
+            if (!item['fullArticle']){
+                continue
+            }
+
             var articlesLength = item['articles'].length
             for (var j = 0; j < articlesLength; j++){
                 article = item['articles'][j]
@@ -105,8 +112,10 @@ exports.myHandler = function(event, context, callback) {
         }
 
         Promise.all(waitForMe).timeout(TIMEOUT).then(function(){
+            if (ret.length == 0) {
+                throw new Error('EMPTY')
+            }
             key = 'messages/' + uuidV4()
-            callback(null, key)
             S3.putObject({
                 Bucket: 'keendly',
                 Key: key,
@@ -117,6 +126,7 @@ exports.myHandler = function(event, context, callback) {
             // TODO remove
             console.log(key)
     //		console.log(ret)
+            callback(null, key)
         }).catch(Promise.TimeoutError, function(e) {
             LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + urls.length);
             callback(null, ret)

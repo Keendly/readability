@@ -113,7 +113,8 @@ exports.myHandler = function(event, context, callback) {
 
         Promise.all(waitForMe).timeout(TIMEOUT).then(function(){
             if (ret.length == 0) {
-                throw new Error('EMPTY')
+                LOG.error({event: 'nothing_to_do'})
+                callback(new Error('Nothing to do here'))
             }
             key = 'messages/' + uuidV4()
             S3.putObject({

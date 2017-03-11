@@ -79,7 +79,8 @@ exports.myHandler = function(event, context, callback) {
                       url: url,
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
-                      }
+                      },
+                      timeout: 10000
                     };
                     rp(options)
                         .then(function (body) {

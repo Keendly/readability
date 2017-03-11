@@ -40,6 +40,8 @@ exports.myHandler = function(event, context, callback) {
             }).then(function(data) {
                 event['items'] = JSON.parse(data.Body.toString('utf-8'))
                 resolve()
+            }).catch(function(error) {
+                callback(error)
             });
         } else {
             resolve()

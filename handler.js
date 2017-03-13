@@ -74,7 +74,7 @@ exports.myHandler = function(event, context, callback) {
             for (var j = 0; j < articlesLength; j++){
                 article = item['articles'][j]
                 p = new Promise(function(resolve) {
-                    url = article['url']
+                    var url = article['url']
                     var options = {
                       url: url,
                       headers: {

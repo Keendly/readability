@@ -9,7 +9,10 @@ var rp = require('request-promise').defaults({
 });
 
 
-https = require('https');
+var http = require('http')
+http.globalAgent.maxSockets = 2048
+
+
 r = require('readability-node');
 var bunyan = require('bunyan');
 var AWS = require('aws-sdk');

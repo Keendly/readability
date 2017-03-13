@@ -1,5 +1,5 @@
 {
-  "name": "readability2",
+  "name": "readability",
   "runtime": "nodejs4.3",
   "description": "Extract article content",
   "region": "eu-west-1",

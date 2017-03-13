@@ -1,18 +1,9 @@
 jsdom = require('jsdom').jsdom;
 var Promise = require("bluebird");
-//var request = require('request').defaults({maxRedirects:5})
 
-var rp = require('request-promise').defaults({
-    maxRedirects: 5,
-//    pool: false,
-//    agent: false,
-    maxSockets: 2048
+var request = require('request').defaults({
+    maxRedirects: 5
 });
-
-
-//var http = require('http')
-//http.globalAgent.maxSockets = 2048
-
 
 r = require('readability-node');
 var bunyan = require('bunyan');
@@ -90,39 +81,40 @@ exports.myHandler = function(event, context, callback) {
                       },
                       timeout: 20000
                     };
-                    rp(options)
-                        .then(function (body) {
-                            try {
-                                LOG.info({event: 'fetched', url: url});
-                                var doc = jsdom(body, {features: {
-                                                    FetchExternalResources: false,
-                                                    ProcessExternalResources: false
-                                                }});
-                                var article = new r.Readability(url, doc).parse();
-                                if (article && article.content){
-                                    LOG.info({event: 'extracted', url: url});
-                                    ret.push({
-                                        'url': url,
-                                        'text': article.content
-                                    })
-                                } else {
-                                    LOG.warn({event: 'empty', url: url});
-                                    // TODO remove it
-                                    ret[url] = "Couldnt extract from: " + body;
-                                }
-                            } catch (error) {
-                                LOG.error({event: 'extract_error', url: url, error: error});
+                    function callback(error, response, body) {
+                      if (!error && response.statusCode == 200) {
+                        try {
+                            LOG.info({event: 'fetched', url: url});
+                            var doc = jsdom(body, {features: {
+                                                FetchExternalResources: false,
+                                                ProcessExternalResources: false
+                                            }});
+                            var article = new r.Readability(url, doc).parse();
+                            if (article && article.content){
+                                LOG.info({event: 'extracted', url: url});
+                                ret.push({
+                                    'url': url,
+                                    'text': article.content
+                                })
+                            } else {
+                                LOG.warn({event: 'empty', url: url});
                                 // TODO remove it
-                                ret[url] = "Error extracting " + err;
+                                ret[url] = "Couldnt extract from: " + body;
                             }
-                            resolve()
-                        })
-                        .catch(function (error) {
-                            LOG.error({event: 'fetch_error', url: url, error: error});
-                            // TODO remove
-                            ret[url] = "Error fetching " + error;
-                            resolve()
-                        });
+                        } catch (error) {
+                            LOG.error({event: 'extract_error', url: url, error: error});
+                            // TODO remove it
+                            ret[url] = "Error extracting " + err;
+                        }
+                      } else {
+                        LOG.error({event: 'fetch_error', url: url, error: error});
+                        // TODO remove
+                        ret[url] = "Error fetching " + error;
+                        resolve()
+                      }
+                    }
+
+                    request(options, callback);
                 });
                 waitForMe.push(p)
             }

@@ -4,13 +4,14 @@ var Promise = require("bluebird");
 
 var rp = require('request-promise').defaults({
     maxRedirects: 5,
-    pool: false,
-    agent: false
+//    pool: false,
+//    agent: false,
+    maxSockets: 2048
 });
 
 
-var http = require('http')
-http.globalAgent.maxSockets = 2048
+//var http = require('http')
+//http.globalAgent.maxSockets = 2048
 
 
 r = require('readability-node');

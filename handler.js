@@ -2,7 +2,11 @@ jsdom = require('jsdom').jsdom;
 var Promise = require("bluebird");
 //var request = require('request').defaults({maxRedirects:5})
 
-var rp = require('request-promise').defaults({maxRedirects:5});
+var rp = require('request-promise').defaults({
+    maxRedirects: 5,
+    pool: false,
+    agent: false
+});
 
 
 https = require('https');
@@ -80,8 +84,7 @@ exports.myHandler = function(event, context, callback) {
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       },
-                      timeout: 20000,
-                      agent: false
+                      timeout: 20000
                     };
                     rp(options)
                         .then(function (body) {

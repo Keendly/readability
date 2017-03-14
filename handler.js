@@ -5,6 +5,8 @@ var request = require('request').defaults({
     maxRedirects: 5
 });
 
+//require('request').debug = true
+
 r = require('readability-node');
 var bunyan = require('bunyan');
 var AWS = require('aws-sdk');
@@ -79,7 +81,7 @@ exports.myHandler = function(event, context, callback) {
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       },
-//                      timeout: 20000
+                      timeout: 30000
                     };
                     function callback(error, response, body) {
                       if (!error && response.statusCode == 200) {

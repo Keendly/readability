@@ -79,7 +79,7 @@ exports.myHandler = function(event, context, callback) {
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       },
-                      timeout: 20000
+//                      timeout: 20000
                     };
                     function callback(error, response, body) {
                       if (!error && response.statusCode == 200) {
@@ -138,7 +138,7 @@ exports.myHandler = function(event, context, callback) {
     //		console.log(ret)
             callback(null, key)
         }).catch(Promise.TimeoutError, function(e) {
-            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + urls.length);
+            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
             callback(null, ret)
         }).catch(console.error.bind(console));
     })

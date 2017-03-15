@@ -5,9 +5,9 @@ var request = require('request').defaults({
     maxRedirects: 5,
     timeout: 10000,
     agent: false,
-//    pool: {
-//        maxSockets: 1000
-//    }
+    pool: {
+        maxSockets: 1000
+    }
 });
 
 var _ = require("underscore");

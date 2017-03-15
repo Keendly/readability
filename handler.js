@@ -2,8 +2,21 @@ jsdom = require('jsdom').jsdom;
 var Promise = require("bluebird");
 
 var request = require('request').defaults({
-    maxRedirects: 5
+    maxRedirects: 5,
+    timeout: 10000,
+    agent: false,
+//    pool: {
+//        maxSockets: 1000
+//    }
 });
+
+var _ = require("underscore");
+//
+//var http = require('http');
+//http.globalAgent.maxSockets = Infinity;
+//var https = require('https');
+//https.globalAgent.maxSockets = Infinity;
+
 
 //require('request').debug = true
 
@@ -20,6 +33,8 @@ Promise.promisifyAll(Object.getPrototypeOf(S3));
 
 //var TIMEOUT = 100
 var TIMEOUT = 1000 * 60 * 4 // 4 minutes
+
+var recoverableErrors = ['ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED'];
 
 var USER_AGENTS = [
         "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36",
@@ -58,6 +73,9 @@ exports.myHandler = function(event, context, callback) {
     })
 
     var ret = []
+    var success = []
+    var to_retry = []
+    var errors = []
     p.then(function() {
         LOG.info('Got ' + event['items'].length + ' items')
         var itemsLength = event['items'].length;
@@ -81,7 +99,7 @@ exports.myHandler = function(event, context, callback) {
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       },
-                      timeout: 30000
+//                      timeout: 30000
                     };
                     function callback(error, response, body) {
                       if (!error && response.statusCode == 200) {
@@ -98,6 +116,8 @@ exports.myHandler = function(event, context, callback) {
                                     'url': url,
                                     'text': article.content
                                 })
+
+                                success.push(url)
                             } else {
                                 LOG.warn({event: 'empty', url: url});
                                 // TODO remove it
@@ -108,10 +128,15 @@ exports.myHandler = function(event, context, callback) {
                             // TODO remove it
                             ret[url] = "Error extracting " + err;
                         }
+                      } else if (error && _.contains(recoverableErrors, error.code)) {
+                        LOG.info({event: 'retry', url: url, error: error.code});
+                        to_retry.push(url)
+                        setTimeout(function(){request(options, callback)}, 10)
                       } else {
-                        LOG.error({event: 'fetch_error', url: url, error: error});
+                        LOG.error({event: 'fetch_error', url: url, error: error, response: response});
                         // TODO remove
                         ret[url] = "Error fetching " + error;
+                        errors.push(url)
                         resolve()
                       }
                     }
@@ -141,6 +166,7 @@ exports.myHandler = function(event, context, callback) {
             callback(null, key)
         }).catch(Promise.TimeoutError, function(e) {
             LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
             callback(null, ret)
         }).catch(console.error.bind(console));
     })

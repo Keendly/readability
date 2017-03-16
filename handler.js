@@ -1,5 +1,5 @@
 jsdom = require('jsdom').jsdom;
-var Promise = require("bluebird");
+//var Promise = require("bluebird");
 
 var request = require('request').defaults({
     maxRedirects: 5,
@@ -29,10 +29,10 @@ const uuidV4 = require('uuid/v4');
 var LOG = bunyan.createLogger({name: 'readability'});
 
 var S3 = new AWS.S3();
-Promise.promisifyAll(Object.getPrototypeOf(S3));
+//Promise.promisifyAll(Object.getPrototypeOf(S3));
 
-var TIMEOUT = 100
-//var TIMEOUT = 1000 * 60 * 4 // 4 minutes
+//var TIMEOUT = 100
+var TIMEOUT = 1000 * 60 * 4 // 4 minutes
 
 var recoverableErrors = ['ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED'];
 
@@ -49,25 +49,64 @@ var USER_AGENTS = [
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0"
 ]
 
+
+function promiseAllTimeout(promises, timeout, resolvePartial=true) {
+    return new Promise(function(resolve, reject) {
+        let results = [],
+            finished = 0,
+            numPromises = promises.length;
+        let onFinish = function() {
+            if (finished < numPromises) {
+                if (resolvePartial) {
+                    (resolve)(results);
+                } else {
+                    throw new Error("Not all promises completed within the specified time");
+                }
+            } else {
+                (resolve)(results);
+            }
+            onFinish = null;
+        };
+        for (let i = 0; i < numPromises; i += 1) {
+            results[i] = undefined;
+            promises[i].then(
+                function(res) {
+                    results[i] = res;
+                    finished += 1;
+                    if (finished === numPromises && onFinish) {
+                        onFinish();
+                    }
+                },
+                reject
+            );
+        }
+        setTimeout(function() {
+            if (onFinish) {
+                onFinish();
+            }
+        }, timeout);
+    });
+}
+
 exports.myHandler = function(event, context, callback) {
     var waitForMe = []
     LOG.info(event)
     p = new Promise(function(resolve) {
         if (event['s3Items'] != null) {
             LOG.info('Gonna download items from s3: ' + event['s3Items']['key'])
-            S3.getObjectAsync({
+            S3.getObject({
                 'Bucket': event['s3Items']['bucket'],
                 'Key': event['s3Items']['key']
-            }).then(function(data) {
-                LOG.info('Downloaded items from s3')
-                event['items'] = JSON.parse(data.Body.toString('utf-8'))
+            }, function(err, data) {
+                if (err){
+                    LOG.info('No need to download items')
+                } else {
+                    LOG.info('Downloaded items from s3')
+                    event['items'] = JSON.parse(data.Body.toString('utf-8'))
+                }
                 resolve()
-            }).catch(function(error) {
-                LOG.error('Error downloading items from s3')
-                callback(error)
             });
         } else {
-            LOG.info('No need to download items')
             resolve()
         }
     })
@@ -145,28 +184,33 @@ exports.myHandler = function(event, context, callback) {
                 waitForMe.push(p)
             }
         }
-
-        Promise.all(waitForMe).timeout(TIMEOUT).then(function(){
+        promiseAllTimeout(waitForMe, TIMEOUT, true)
+            .then(function(){
             if (ret.length == 0) {
                 LOG.error({event: 'nothing_to_do'})
                 callback(new Error('Nothing to do here'))
             }
+            if (ret.length != waitForMe.length){
+                LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+                LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+            }
             key = 'messages/' + uuidV4()
+            console.log(key)
             S3.putObject({
                 Bucket: 'keendly',
                 Key: key,
                 Body: JSON.stringify(ret)
             }, function (err) {
                 if (err) { throw err; }
+                callback(null, key)
              });
-            // TODO remove
-            console.log(key)
+
     //		console.log(ret)
-            callback(null, key)
-        }).catch(Promise.TimeoutError, function(e) {
-            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
-            callback(null, ret)
+
+//        }).catch(Promise.TimeoutError, function(e) {
+//            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+//            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+//            callback(null, ret)
         }).catch(console.error.bind(console));
     })
 }

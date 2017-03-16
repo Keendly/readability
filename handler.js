@@ -55,7 +55,6 @@ function promiseAllTimeout(promises, timeout) {
         finished = 0;
         numPromises = promises.length;
         for (var i = 0; i < numPromises; i += 1) {
-            results[i] = undefined;
             promises[i].then(
                 function(res) {
                     finished += 1;
@@ -153,7 +152,7 @@ exports.myHandler = function(event, context, callback) {
                       } else if (error && _.contains(recoverableErrors, error.code)) {
                         LOG.info({event: 'retry', url: url, error: error.code});
                         to_retry.push(url)
-                        setTimeout(function(){request(options, callback)}, 10)
+                        setTimeout(function(){request(options, clb)}, 10)
                       } else {
                         LOG.error({event: 'fetch_error', url: url, error: error, response: response});
                         // TODO remove

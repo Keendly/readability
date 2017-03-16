@@ -50,40 +50,24 @@ var USER_AGENTS = [
 ]
 
 
-function promiseAllTimeout(promises, timeout, resolvePartial) {
+function promiseAllTimeout(promises, timeout) {
     return new Promise(function(resolve, reject) {
-        results = [],
-            finished = 0,
-            numPromises = promises.length;
-        onFinish = function() {
-            if (finished < numPromises) {
-                if (resolvePartial) {
-                    (resolve)(results);
-                } else {
-                    throw new Error("Not all promises completed within the specified time");
-                }
-            } else {
-                (resolve)(results);
-            }
-            onFinish = null;
-        };
+        finished = 0;
+        numPromises = promises.length;
         for (var i = 0; i < numPromises; i += 1) {
             results[i] = undefined;
             promises[i].then(
                 function(res) {
-                    results[i] = res;
                     finished += 1;
-                    if (finished === numPromises && onFinish) {
-                        onFinish();
+                    if (finished === numPromises) {
+                        resolve();
                     }
                 },
                 reject
             );
         }
         setTimeout(function() {
-            if (onFinish) {
-                onFinish();
-            }
+            resolve();
         }, timeout);
     });
 }
@@ -139,7 +123,7 @@ exports.myHandler = function(event, context, callback) {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       },
                     };
-                    function callback(error, response, body) {
+                    function clb(error, response, body) {
                       if (!error && response.statusCode == 200) {
                         try {
                             LOG.info({event: 'fetched', url: url});
@@ -179,31 +163,34 @@ exports.myHandler = function(event, context, callback) {
                       }
                     }
 
-                    request(options, callback);
+                    request(options, clb);
                 });
                 waitForMe.push(p)
             }
         }
-        promiseAllTimeout(waitForMe, TIMEOUT, true)
+        promiseAllTimeout(waitForMe, TIMEOUT)
             .then(function(){
-            if (ret.length == 0) {
-                LOG.error({event: 'nothing_to_do'})
-                callback(new Error('Nothing to do here'))
-            }
-            if (ret.length != waitForMe.length){
-                LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-                LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
-            }
-            key = 'messages/' + uuidV4()
-            console.log(key)
-            S3.putObject({
-                Bucket: 'keendly',
-                Key: key,
-                Body: JSON.stringify(ret)
-            }, function (err) {
-                if (err) { throw err; }
-                callback(null, key)
-             });
+                if (ret.length == 0) {
+                    LOG.error({event: 'nothing_to_do'})
+                    callback(new Error('Nothing to do here'))
+                }
+                if (ret.length != waitForMe.length){
+                    LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+                    LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+                }
+                key = 'messages/' + uuidV4()
+                console.log(key)
+                S3.putObject({
+                    Bucket: 'keendly',
+                    Key: key,
+                    Body: JSON.stringify(ret)
+                }, function (err) {
+                    if (err) {
+                        throw err;
+                    } else {
+                        callback(null, key)
+                    }
+                 });
 
     //		console.log(ret)
 

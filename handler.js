@@ -31,8 +31,8 @@ var LOG = bunyan.createLogger({name: 'readability'});
 var S3 = new AWS.S3();
 Promise.promisifyAll(Object.getPrototypeOf(S3));
 
-//var TIMEOUT = 100
-var TIMEOUT = 1000 * 60 * 4 // 4 minutes
+var TIMEOUT = 100
+//var TIMEOUT = 1000 * 60 * 4 // 4 minutes
 
 var recoverableErrors = ['ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED'];
 
@@ -99,7 +99,6 @@ exports.myHandler = function(event, context, callback) {
                       headers: {
                         'User-Agent': USER_AGENTS[parseInt(Math.random() * 10)]
                       },
-//                      timeout: 30000
                     };
                     function callback(error, response, body) {
                       if (!error && response.statusCode == 200) {

@@ -50,12 +50,12 @@ var USER_AGENTS = [
 ]
 
 
-function promiseAllTimeout(promises, timeout, resolvePartial=true) {
+function promiseAllTimeout(promises, timeout, resolvePartial) {
     return new Promise(function(resolve, reject) {
-        let results = [],
+        results = [],
             finished = 0,
             numPromises = promises.length;
-        let onFinish = function() {
+        onFinish = function() {
             if (finished < numPromises) {
                 if (resolvePartial) {
                     (resolve)(results);
@@ -67,7 +67,7 @@ function promiseAllTimeout(promises, timeout, resolvePartial=true) {
             }
             onFinish = null;
         };
-        for (let i = 0; i < numPromises; i += 1) {
+        for (var i = 0; i < numPromises; i += 1) {
             results[i] = undefined;
             promises[i].then(
                 function(res) {

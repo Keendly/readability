@@ -183,7 +183,7 @@ exports.myHandler = function(event, context, callback) {
                     Bucket: 'keendly',
                     Key: key,
                     Body: JSON.stringify(ret)
-                }, function (err) {
+                }, function (err, data) {
                     if (err) {
                         throw err;
                     } else {

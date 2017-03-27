@@ -1,6 +1,6 @@
 {
   "name": "readability",
-  "runtime": "nodejs4.3",
+  "runtime": "nodejs6.10",
   "description": "Extract article content",
   "region": "eu-west-1",
   "handler": "handler.myHandler",

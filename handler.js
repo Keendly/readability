@@ -155,7 +155,7 @@ exports.myHandler = function(event, context, callback) {
                         to_retry.push(url)
                         setTimeout(function(){request(options, clb)}, 15)
                       } else {
-                        LOG.error({event: 'fetch_error', url: url, error: error, response: response});
+//                        LOG.error({event: 'fetch_error', url: url, error: error, response: response});
                         // TODO remove
                         ret[url] = "Error fetching " + error;
                         errors.push(url)
@@ -199,22 +199,22 @@ exports.myHandler = function(event, context, callback) {
 //            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
 //            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
 //            callback(null, ret)
-        }).catch(
-//                    LOG.error(err)
-                    LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-                    LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
-                    key = 'messages/' + uuidV4()
-                    S3.putObject({
-                        Bucket: 'keendly',
-                        Key: key,
-                        Body: JSON.stringify(ret)
-                    }, function (err, data) {
-                        if (err) {
-                            throw err;
-                        } else {
-                            callback(null, key)
-                        }
-                     });
-        );
+        }).catch(function(err) {
+                LOG.error(err)
+                        LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+                        LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+                        key = 'messages/' + uuidV4()
+                        S3.putObject({
+                            Bucket: 'keendly',
+                            Key: key,
+                            Body: JSON.stringify(ret)
+                        }, function (err, data) {
+                            if (err) {
+                                throw err;
+                            } else {
+                                callback(null, key)
+                            }
+                         });
+        });
     })
 }

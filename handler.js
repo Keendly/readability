@@ -180,7 +180,6 @@ exports.myHandler = function(event, context, callback) {
                 } else {
                     LOG.info('All done!')
                 }
-                key = 'messages/' + uuidV4()
                 console.log(key)
                 S3.putObject({
                     Bucket: 'keendly',
@@ -204,6 +203,7 @@ exports.myHandler = function(event, context, callback) {
             LOG.error(err)
             LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
             LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+            key = 'messages/' + uuidV4()
             S3.putObject({
                 Bucket: 'keendly',
                 Key: key,

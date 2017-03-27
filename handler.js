@@ -126,14 +126,14 @@ exports.myHandler = function(event, context, callback) {
                     function clb(error, response, body) {
                       if (!error && response.statusCode == 200) {
                         try {
-                            LOG.info({event: 'fetched', url: url});
+//                            LOG.info({event: 'fetched', url: url});
                             var doc = jsdom(body, {features: {
                                                 FetchExternalResources: false,
                                                 ProcessExternalResources: false
                                             }});
                             var article = new r.Readability(url, doc).parse();
                             if (article && article.content){
-                                LOG.info({event: 'extracted', url: url});
+//                                LOG.info({event: 'extracted', url: url});
                                 ret.push({
                                     'url': url,
                                     'text': article.content
@@ -141,7 +141,7 @@ exports.myHandler = function(event, context, callback) {
 
                                 success.push(url)
                             } else {
-                                LOG.warn({event: 'empty', url: url});
+//                                LOG.warn({event: 'empty', url: url});
                                 // TODO remove it
                                 ret[url] = "Couldnt extract from: " + body;
                             }

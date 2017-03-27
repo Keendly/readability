@@ -11,6 +11,7 @@ var request = require('request').defaults({
 });
 
 var _ = require("underscore");
+var Q = require('q');
 //
 //var http = require('http');
 //http.globalAgent.maxSockets = Infinity;
@@ -152,7 +153,7 @@ exports.myHandler = function(event, context, callback) {
                       } else if (error && _.contains(recoverableErrors, error.code)) {
                         LOG.info({event: 'retry', url: url, error: error.code});
                         to_retry.push(url)
-                        setTimeout(function(){request(options, clb)}, 10)
+                        setTimeout(function(){request(options, clb)}, 15)
                       } else {
                         LOG.error({event: 'fetch_error', url: url, error: error, response: response});
                         // TODO remove
@@ -167,7 +168,8 @@ exports.myHandler = function(event, context, callback) {
                 waitForMe.push(p)
             }
         }
-        promiseAllTimeout(waitForMe, TIMEOUT)
+        Q.all(waitForMe).timeout(TIMEOUT)
+        //promiseAllTimeout(waitForMe, TIMEOUT)
             .then(function(){
                 if (ret.length == 0) {
                     LOG.error({event: 'nothing_to_do'})
@@ -176,6 +178,8 @@ exports.myHandler = function(event, context, callback) {
                 if (ret.length != waitForMe.length){
                     LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
                     LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+                } else {
+                    LOG.info('All done!')
                 }
                 key = 'messages/' + uuidV4()
                 console.log(key)

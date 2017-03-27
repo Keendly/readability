@@ -151,7 +151,7 @@ exports.myHandler = function(event, context, callback) {
                             ret[url] = "Error extracting " + err;
                         }
                       } else if (error && _.contains(recoverableErrors, error.code)) {
-                        LOG.info({event: 'retry', url: url, error: error.code});
+//                        LOG.info({event: 'retry', url: url, error: error.code});
                         to_retry.push(url)
                         setTimeout(function(){request(options, clb)}, 15)
                       } else {

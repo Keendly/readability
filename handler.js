@@ -176,8 +176,7 @@ exports.myHandler = function(event, context, callback) {
                     callback(new Error('Nothing to do here'))
                 }
                 if (ret.length != waitForMe.length){
-                    LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-                    LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+
                 } else {
                     LOG.info('All done!')
                 }
@@ -201,6 +200,21 @@ exports.myHandler = function(event, context, callback) {
 //            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
 //            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
 //            callback(null, ret)
+        }, function(err){
+            LOG.error(err)
+            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+            S3.putObject({
+                Bucket: 'keendly',
+                Key: key,
+                Body: JSON.stringify(ret)
+            }, function (err, data) {
+                if (err) {
+                    throw err;
+                } else {
+                    callback(null, key)
+                }
+             });
         }).catch(console.error.bind(console));
     })
 }

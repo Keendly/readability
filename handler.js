@@ -73,6 +73,7 @@ function promiseAllTimeout(promises, timeout) {
 }
 
 exports.myHandler = function(event, context, callback) {
+    context.callbackWaitsForEmptyEventLoop = false
     var waitForMe = []
     LOG.info(event)
     p = new Promise(function(resolve) {

@@ -50,30 +50,10 @@ var USER_AGENTS = [
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0"
 ]
 
-
-function promiseAllTimeout(promises, timeout) {
-    return new Promise(function(resolve, reject) {
-        finished = 0;
-        numPromises = promises.length;
-        for (var i = 0; i < numPromises; i += 1) {
-            promises[i].then(
-                function(res) {
-                    finished += 1;
-                    if (finished === numPromises) {
-                        resolve();
-                    }
-                },
-                reject
-            );
-        }
-        setTimeout(function() {
-            resolve();
-        }, timeout);
-    });
-}
-
 exports.myHandler = function(event, context, callback) {
+    // do not wait for all requests to finish, exit after timeout
     context.callbackWaitsForEmptyEventLoop = false
+
     var waitForMe = []
     LOG.info(event)
     p = new Promise(function(resolve) {
@@ -127,14 +107,14 @@ exports.myHandler = function(event, context, callback) {
                     function clb(error, response, body) {
                       if (!error && response.statusCode == 200) {
                         try {
-//                            LOG.info({event: 'fetched', url: url});
+                            LOG.info({event: 'fetched', url: urlrl});
                             var doc = jsdom(body, {features: {
                                                 FetchExternalResources: false,
                                                 ProcessExternalResources: false
                                             }});
                             var article = new r.Readability(url, doc).parse();
                             if (article && article.content){
-//                                LOG.info({event: 'extracted', url: url});
+                                LOG.info({event: 'extracted', url: url});
                                 ret.push({
                                     'url': url,
                                     'text': article.content
@@ -142,7 +122,7 @@ exports.myHandler = function(event, context, callback) {
 
                                 success.push(url)
                             } else {
-//                                LOG.warn({event: 'empty', url: url});
+                                LOG.warn({event: 'empty', url: url});
                                 // TODO remove it
                                 ret[url] = "Couldnt extract from: " + body;
                             }
@@ -152,11 +132,11 @@ exports.myHandler = function(event, context, callback) {
                             ret[url] = "Error extracting " + err;
                         }
                       } else if (error && _.contains(recoverableErrors, error.code)) {
-//                        LOG.info({event: 'retry', url: url, error: error.code});
+                        LOG.info({event: 'retry', url: url, error: error.code});
                         to_retry.push(url)
                         setTimeout(function(){request(options, clb)}, 15)
                       } else {
-//                        LOG.error({event: 'fetch_error', url: url, error: error, response: response});
+                        LOG.error({event: 'fetch_error', url: url, error: error, response: response});
                         // TODO remove
                         ret[url] = "Error fetching " + error;
                         errors.push(url)
@@ -170,17 +150,12 @@ exports.myHandler = function(event, context, callback) {
             }
         }
         Q.all(waitForMe).timeout(TIMEOUT)
-        //promiseAllTimeout(waitForMe, TIMEOUT)
             .then(function(){
                 if (ret.length == 0) {
                     LOG.error({event: 'nothing_to_do'})
                     callback(new Error('Nothing to do here'))
                 }
-                if (ret.length != waitForMe.length){
-
-                } else {
-                    LOG.info('All done!')
-                }
+                LOG.info('All done!')
                 console.log(key)
                 S3.putObject({
                     Bucket: 'keendly',
@@ -194,28 +169,22 @@ exports.myHandler = function(event, context, callback) {
                     }
                  });
 
-    //		console.log(ret)
-
-//        }).catch(Promise.TimeoutError, function(e) {
-//            LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-//            LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
-//            callback(null, ret)
-        }).catch(function(err) {
-                LOG.error(err)
-                        LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-                        LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
-                        key = 'messages/' + uuidV4()
-                        S3.putObject({
-                            Bucket: 'keendly',
-                            Key: key,
-                            Body: JSON.stringify(ret)
-                        }, function (err, data) {
-                            if (err) {
-                                throw err;
-                            } else {
-                                callback(null, key)
-                            }
-                         });
-        });
+        }, function(err) {
+               LOG.error(err)
+                       LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
+                       LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
+                       key = 'messages/' + uuidV4()
+                       S3.putObject({
+                           Bucket: 'keendly',
+                           Key: key,
+                           Body: JSON.stringify(ret)
+                       }, function (err, data) {
+                           if (err) {
+                               throw err;
+                           } else {
+                               callback(null, key)
+                           }
+                        });
+       }).catch(console.error.bind(console));
     })
 }

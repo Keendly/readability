@@ -1,5 +1,4 @@
 jsdom = require('jsdom').jsdom;
-//var Promise = require("bluebird");
 
 var request = require('request').defaults({
     maxRedirects: 5,
@@ -12,14 +11,6 @@ var request = require('request').defaults({
 
 var _ = require("underscore");
 var Q = require('q');
-//
-//var http = require('http');
-//http.globalAgent.maxSockets = Infinity;
-//var https = require('https');
-//https.globalAgent.maxSockets = Infinity;
-
-
-//require('request').debug = true
 
 r = require('readability-node');
 var bunyan = require('bunyan');
@@ -30,10 +21,8 @@ const uuidV4 = require('uuid/v4');
 var LOG = bunyan.createLogger({name: 'readability'});
 
 var S3 = new AWS.S3();
-//Promise.promisifyAll(Object.getPrototypeOf(S3));
 
-//var TIMEOUT = 100
-var TIMEOUT = 1000 * 60 * 1 // 4 minutes
+var TIMEOUT = 1000 * 60 * 2 // 1 minutes
 
 var recoverableErrors = ['ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED'];
 
@@ -49,6 +38,22 @@ var USER_AGENTS = [
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/602.2.14 (KHTML, like Gecko) Version/10.0.1 Safari/602.2.14",
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:50.0) Gecko/20100101 Firefox/50.0"
 ]
+
+function uploadToS3(content, callback) {
+    key = 'messages/' + uuidV4()
+    S3.putObject({
+        Bucket: 'keendly',
+        Key: key,
+        Body: JSON.stringify(content)
+    }, function (err, data) {
+        if (err) {
+            throw err;
+        } else {
+            console.log(key)
+            callback(null, key)
+        }
+     });
+}
 
 exports.myHandler = function(event, context, callback) {
     // do not wait for all requests to finish, exit after timeout
@@ -77,9 +82,9 @@ exports.myHandler = function(event, context, callback) {
     })
 
     var ret = []
-    var success = []
-    var to_retry = []
-    var errors = []
+    var success = 0
+    var retries = 0
+    var errors = 0
     p.then(function() {
         LOG.info('Got ' + event['items'].length + ' items')
         var itemsLength = event['items'].length;
@@ -119,27 +124,35 @@ exports.myHandler = function(event, context, callback) {
                                     'url': url,
                                     'text': article.content
                                 })
-
-                                success.push(url)
+                                success++
                             } else {
                                 LOG.warn({event: 'empty', url: url});
                                 // TODO remove it
-                                ret[url] = "Couldnt extract from: " + body;
+                                ret.push({
+                                    'url': url,
+                                    'text': "Couldnt extract from: " + body
+                                })
                             }
                         } catch (error) {
                             LOG.error({event: 'extract_error', url: url, error: error});
                             // TODO remove it
-                            ret[url] = "Error extracting " + error;
+                            ret.push({
+                                'url': url,
+                                'text': "Error extracting " + error
+                            })
                         }
                       } else if (error && _.contains(recoverableErrors, error.code)) {
                         LOG.info({event: 'retry', url: url, error: error.code});
-                        to_retry.push(url)
+                        retries++
                         setTimeout(function(){request(options, clb)}, 15)
                       } else {
                         LOG.error({event: 'fetch_error', url: url, error: error, response: response});
                         // TODO remove
-                        ret[url] = "Error fetching " + error;
-                        errors.push(url)
+                        ret.push({
+                            'url': url,
+                            'text': "Error fetching " + error
+                        })
+                        errors++
                         resolve()
                       }
                     }
@@ -149,42 +162,21 @@ exports.myHandler = function(event, context, callback) {
                 waitForMe.push(p)
             }
         }
+
         Q.all(waitForMe).timeout(TIMEOUT)
             .then(function(){
                 if (ret.length == 0) {
                     LOG.error({event: 'nothing_to_do'})
                     callback(new Error('Nothing to do here'))
                 }
-                LOG.info('All done!')
-                console.log(key)
-                S3.putObject({
-                    Bucket: 'keendly',
-                    Key: key,
-                    Body: JSON.stringify(ret)
-                }, function (err, data) {
-                    if (err) {
-                        throw err;
-                    } else {
-                        callback(null, key)
-                    }
-                 });
+                LOG.info({event: 'finished'}, success + ' done!')
+                uploadToS3(ret, callback)
 
-        }, function(err) {
+            }, function(err) {
+                Q.all(waitForMe).cancel()
                LOG.error(err)
-                       LOG.error({event: 'timeout'}, "Extracted " + ret.length + " out of " + waitForMe.length);
-                       LOG.info('Success ' + success.length + " Retry " + to_retry.length + " Error " + errors.length)
-                       key = 'messages/' + uuidV4()
-                       S3.putObject({
-                           Bucket: 'keendly',
-                           Key: key,
-                           Body: JSON.stringify(ret)
-                       }, function (err, data) {
-                           if (err) {
-                               throw err;
-                           } else {
-                               callback(null, key)
-                           }
-                        });
+               LOG.error({event: 'timeout'}, "Done " + success + " out of " + waitForMe.length + ". Retry " + retries + ", errors: " + errors);
+               uploadToS3(ret, callback)
        }).catch(console.error.bind(console));
     })
 }

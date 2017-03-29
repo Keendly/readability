@@ -107,7 +107,7 @@ exports.myHandler = function(event, context, callback) {
                     function clb(error, response, body) {
                       if (!error && response.statusCode == 200) {
                         try {
-                            LOG.info({event: 'fetched', url: urlrl});
+                            LOG.info({event: 'fetched', url: url});
                             var doc = jsdom(body, {features: {
                                                 FetchExternalResources: false,
                                                 ProcessExternalResources: false

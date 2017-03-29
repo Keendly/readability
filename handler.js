@@ -33,7 +33,7 @@ var S3 = new AWS.S3();
 //Promise.promisifyAll(Object.getPrototypeOf(S3));
 
 //var TIMEOUT = 100
-var TIMEOUT = 1000 * 60 * 4 // 4 minutes
+var TIMEOUT = 1000 * 60 * 1 // 4 minutes
 
 var recoverableErrors = ['ESOCKETTIMEDOUT', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED'];
 
@@ -129,7 +129,7 @@ exports.myHandler = function(event, context, callback) {
                         } catch (error) {
                             LOG.error({event: 'extract_error', url: url, error: error});
                             // TODO remove it
-                            ret[url] = "Error extracting " + err;
+                            ret[url] = "Error extracting " + error;
                         }
                       } else if (error && _.contains(recoverableErrors, error.code)) {
                         LOG.info({event: 'retry', url: url, error: error.code});

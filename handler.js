@@ -173,7 +173,6 @@ exports.myHandler = function(event, context, callback) {
                 uploadToS3(ret, callback)
 
             }, function(err) {
-                Q.all(waitForMe).cancel()
                LOG.error(err)
                LOG.error({event: 'timeout'}, "Done " + success + " out of " + waitForMe.length + ". Retry " + retries + ", errors: " + errors);
                uploadToS3(ret, callback)

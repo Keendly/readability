@@ -141,6 +141,7 @@ exports.myHandler = function(event, context, callback) {
                                 'text': "Error extracting " + error
                             })
                         }
+                        resolve()
                       } else if (error && _.contains(recoverableErrors, error.code)) {
                         LOG.info({event: 'retry', url: url, error: error.code});
                         retries++

@@ -48,7 +48,6 @@ exports.myHandler = function(event, context, callback) {
     var waitForMe = []
     LOG.info(event)
     p = new Promise(function(resolve) {
-            LOG.info('Gonna download items from s3: ' + event['s3Items']['key'])
             S3.getObject({
                 'Bucket': 'keendly',
                 'Key': event['articlesContent']
@@ -65,10 +64,10 @@ exports.myHandler = function(event, context, callback) {
 
     var ret = []
     p.then(function() {
-        LOG.info('Got ' + event['items'].length + ' items')
-        for (var key in event['items']) {
+        for (var url in event['items']) {
+            LOG.info('Processing ' + url)
             try {
-                var doc = jsdom(event[key], {features: {
+                var doc = jsdom(event['items'][url], {features: {
                                     FetchExternalResources: false,
                                     ProcessExternalResources: false
                                 }});

@@ -6,5 +6,5 @@
   "handler": "handler.myHandler",
   "role": "arn:aws:iam::625416862388:role/lambda_s3_exec_role",
   "timeout": 300,
-  "memory": 512
+  "memory": 1024
 }

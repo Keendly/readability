@@ -50,7 +50,7 @@ exports.myHandler = function(event, context, callback) {
     p = new Promise(function(resolve) {
             S3.getObject({
                 'Bucket': 'keendly',
-                'Key': event['articlesContent']
+                'Key': event
             }, function(err, data) {
                 if (err){
                     LOG.info('No need to download items')

@@ -74,10 +74,7 @@ exports.myHandler = function(event, context, callback) {
                 var article = new r.Readability(url, doc).parse();
                 if (article && article.content){
                     LOG.info({event: 'extracted', url: url});
-                    ret.push({
-                        'url': url,
-                        'text': article.content
-                    })
+                    ret[url] = article.content
                 } else {
                     LOG.warn({event: 'empty', url: url});
                     // TODO remove it

@@ -55,7 +55,8 @@ exports.myHandler = function(event, context, callback) {
                 if (err){
                     LOG.info('No need to download items')
                 } else {
-                    LOG.info('Downloaded items from s3')
+                    LOG.info('Downloaded items from s3:')
+                    LOG.info(data.Body.toString('utf-8'))
                     event['items'] = JSON.parse(data.Body.toString('utf-8'))
                 }
                 resolve()
@@ -81,18 +82,18 @@ exports.myHandler = function(event, context, callback) {
                 } else {
                     LOG.warn({event: 'empty', url: url});
                     // TODO remove it
-                    ret.push({
-                        'url': url,
-                        'text': "Couldnt extract from: " + body
-                    })
+//                    ret.push({
+//                        'url': url,
+//                        'text': "Couldnt extract from: " + body
+//                    })
                 }
             } catch (error) {
                 LOG.error({event: 'extract_error', url: url, error: error});
                 // TODO remove it
-                ret.push({
-                    'url': url,
-                    'text': "Error extracting " + error
-                })
+//                ret.push({
+//                    'url': url,
+//                    'text': "Error extracting " + error
+//                })
             }
         }
         LOG.info({event: 'finished'})

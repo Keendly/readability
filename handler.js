@@ -46,7 +46,7 @@ exports.myHandler = function(event, context, callback) {
     context.callbackWaitsForEmptyEventLoop = false
 
     var waitForMe = []
-    LOG.info(event)
+    var urls = {}
     p = new Promise(function(resolve) {
             S3.getObject({
                 'Bucket': 'keendly',
@@ -55,9 +55,8 @@ exports.myHandler = function(event, context, callback) {
                 if (err){
                     LOG.info('No need to download items')
                 } else {
-                    LOG.info('Downloaded items from s3:')
-                    LOG.info(data.Body.toString('utf-8'))
-                    event['items'] = JSON.parse(data.Body.toString('utf-8'))
+                    LOG.info('Downloaded items from s3')
+                    urls = JSON.parse(data.Body.toString('utf-8'))
                 }
                 resolve()
             });
@@ -65,10 +64,10 @@ exports.myHandler = function(event, context, callback) {
 
     var ret = []
     p.then(function() {
-        for (var url in event['items']) {
+        for (var url in urls) {
             LOG.info('Processing ' + url)
             try {
-                var doc = jsdom(event['items'][url], {features: {
+                var doc = jsdom(urls[url], {features: {
                                     FetchExternalResources: false,
                                     ProcessExternalResources: false
                                 }});

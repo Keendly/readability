@@ -78,6 +78,7 @@ exports.myHandler = function(event, context, callback) {
             }
         }
         LOG.info({event: 'finished'})
+        LOG.info("Extracted " + Object.keys(ret).length + " out of " + Object.keys(urls).length)
         uploadToS3(ret, callback)
     })
 }
